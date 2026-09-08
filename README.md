@@ -74,4 +74,4 @@ npm install
 npx expo start
 ```
 
-Requires the companion backend running separately — see [ai-text-adventure-backend](https://github.com/md-nafiz-rahman/textadventure-backend)) for setup instructions. Update `src/constants/api.ts` to point at your backend's URL (a local address for development, or the deployed Render URL for production).
+Requires the companion backend running separately see [ai-text-adventure-backend](https://github.com/md-nafiz-rahman/textadventure-backend)) for setup instructions. Update `src/constants/api.ts` to point at your backend's URL (a local address for development, or the deployed Render URL for production).
