@@ -1,56 +1,77 @@
-# Welcome to your Expo app 👋
+# AI Text Adventure Game
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile app that generates complete, playable text adventure worlds from a short description or a random surprise using a multi-agent AI pipeline built on Claude Sonnet 5.
 
-## Get started
+Type `go north`, `take the rusty key`, `solve keyboard`, or tap a suggested action instead. Every world is different, and every world is verified playable before you ever see it.
 
-1. Install dependencies
+## What makes this different
 
-   ```bash
-   npm install
-   ```
 
-2. Start the app
+- **A generator agent** builds each world (rooms, exits, items, puzzles, enemies) using Claude's structured tool-calling, guaranteeing the output matches an exact schema.
+- **A deterministic validator** not AI simulates a full playthrough of the generated world before it's ever shown to a player, confirming every locked door has a real way to open it, every enemy has a genuinely obtainable weakness, and the objective is actually achievable.
+- **A second, independent critic agent** reviews anything that passes validation, but purely for creative quality,  pacing, fairness, thematic consistency  with no visibility into the structural checks.
+- **A self-correcting loop** feeds a failed attempt back to the generator along with the exact reason it failed, using Claude's own tool-result mechanism inside one continued conversation, escalating to a more directive correction if the same issue repeats. Up to 5 attempts. If none fully succeed, the player still receives the last structurally valid world rather than an error.
 
-   ```bash
-   npx expo start
-   ```
+The backend for this pipeline lives in a separate repository: [ai-text-adventure-backend](https://github.com/md-nafiz-rahman/textadventure-backend).
 
-In the output, you'll find options to open the app in a
+## How to play
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The game is entirely command-driven, type what you want to do, or tap a suggested action chip for the same effect.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+| Command | What it does |
+|---|---|
+| `look` | Describe your current surroundings |
+| `go <direction>` | Move to another room, e.g. `go north` |
+| `take <item>` | Pick up an item |
+| `inventory` | List what you're carrying |
+| `examine <item/enemy>` | Get a closer look at something |
+| `solve <answer>` | Attempt the puzzle in the current room |
+| `hint` | Reveal the next hint for an unsolved puzzle |
+| `fight <enemy>` | Attempt to defeat an enemy blocking your way |
+| `save` | Store your current progress |
+| `help` | List all available commands in-game |
 
-## Get a fresh project
+Typing something outside this list still gets a response an in-character line generated live by AI, describing what happens without ever changing the actual game state or revealing a puzzle's answer.
 
-When you're ready, run:
+Puzzle answers don't need to be exact. A genuine synonym or a small grammatical difference (e.g. "torch" for an official answer of "flashlight") is accepted; a misspelling of the correct word is not.
+
+## Creating a new adventure
+
+From the menu, open **New Game**. You can either:
+
+- Describe a setting in your own words  anything from "a haunted lighthouse" to a detailed, multi-part scenario
+- Tap **Surprise me (random)** for a fully AI-chosen theme
+
+### Why generation takes a moment
+
+A new world isn't a single API call, it's the full pipeline described above which is generation, mechanical validation, creative review, and potentially several correction rounds if something needs fixing. This usually takes anywhere from a few seconds to around a minute, occasionally longer for a particularly detailed or ambitious description. The loading screen shows live status updates from the actual pipeline (e.g. *"Reviewing puzzle design and pacing..."*) whenever they're available, alongside general progress messages the rest of the time.
+
+## Saved Games
+
+Progress is stored on-device. From the menu:
+
+- **Continue** an in-progress adventure exactly where you left off
+- **Play Again** a completed or failed adventure, restarting that same world from the beginning
+- **Delete** any save permanently
+
+## Settings
+
+- **Light Theme** - switch the entire app between a dark and light appearance
+- **Suggested Actions** - toggle the tappable quick-action chips above the text input on or off; typed commands always work regardless of this setting
+
+## Tech stack
+
+- **React Native / Expo** - mobile app, file-based routing via Expo Router
+- **TypeScript** - a custom game engine and JSON world schema built from scratch, independent of any AI involvement
+- **Node.js / Express** - backend hosting the AI generation pipeline, deployed on Render
+- **Anthropic Claude Sonnet 5** - structured generation, independent critique, freeform narrative responses, and semantic puzzle-answer checking
+- **AsyncStorage** - local save/load and settings persistence
+
+## Running locally
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Requires the companion backend running separately — see [ai-text-adventure-backend](https://github.com/md-nafiz-rahman/textadventure-backend)) for setup instructions. Update `src/constants/api.ts` to point at your backend's URL (a local address for development, or the deployed Render URL for production).
