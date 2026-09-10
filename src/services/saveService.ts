@@ -1,4 +1,4 @@
-import { GameMap, GameState } from '@/types/game';
+import { GameMap, GameState, LogLine } from '@/types/game';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SAVE_PREFIX = 'save:';
@@ -8,7 +8,7 @@ export type SavedGame = {
   mapTitle: string;
   map: GameMap;
   state: GameState;
-  log: string[];
+  log: LogLine[];
   savedAt: number;
 };
 
@@ -16,7 +16,7 @@ export async function saveGame(
   id: string,
   map: GameMap,
   state: GameState,
-  log: string[]
+  log: LogLine[]
 ): Promise<void> {
   const savedGame: SavedGame = {
     id,

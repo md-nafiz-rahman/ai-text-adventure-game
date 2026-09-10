@@ -15,6 +15,9 @@ export type ThemeColors = {
   accentText: string;
   danger: string;
   info: string;
+  item: string;
+  puzzle: string;
+  ai: string;
 };
 
 const darkColors: ThemeColors = {
@@ -29,6 +32,9 @@ const darkColors: ThemeColors = {
   accentText: '#000000',
   danger: '#f87171',
   info: '#3b82f6',
+  item: '#fbbf24',
+  puzzle: '#a78bfa',
+  ai: '#22d3ee',
 };
 
 const lightColors: ThemeColors = {
@@ -43,6 +49,9 @@ const lightColors: ThemeColors = {
   accentText: '#ffffff',
   danger: '#dc2626',
   info: '#2563eb',
+  item: '#b45309',
+  puzzle: '#7c3aed',
+  ai: '#0891b2',
 };
 
 const THEME_STORAGE_KEY = 'settings:theme';
@@ -78,7 +87,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           setQuickActionsEnabledState(storedQuickActions === 'true');
         }
       } catch (err) {
-        // If loading preferences fails, the safe defaults above already apply.
       } finally {
         setLoaded(true);
       }

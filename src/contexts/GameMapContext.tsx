@@ -1,6 +1,6 @@
 import { createInitialState, processCommand } from '@/engine/gameEngine';
 import type { SavedGame } from '@/services/saveService';
-import { GameMap, GameState } from '@/types/game';
+import { GameMap, GameState, LogLine } from '@/types/game';
 import { createContext, ReactNode, useContext, useState } from 'react';
 
 type GameMapContextValue = {
@@ -8,8 +8,8 @@ type GameMapContextValue = {
   saveId: string;
   map: GameMap | null;
   state: GameState | null;
-  log: string[];
-  setStateAndLog: (state: GameState, log: string[]) => void;
+  log: LogLine[];
+  setStateAndLog: (state: GameState, log: LogLine[]) => void;
   startNewGame: (map: GameMap) => void;
   resumeSave: (saved: SavedGame) => void;
   restartSave: (saved: SavedGame) => void;
@@ -18,7 +18,8 @@ type GameMapContextValue = {
 function freshSession(map: GameMap) {
   const initial = createInitialState(map);
   const { output } = processCommand(map, initial, 'look');
-  return { state: initial, log: [map.title, '', ...output] };
+  const log: LogLine[] = [{ text: map.title, type: 'narrative' }, { text: '', type: 'system' }, ...output];
+  return { state: initial, log };
 }
 
 const GameMapContext = createContext<GameMapContextValue | undefined>(undefined);
@@ -28,9 +29,9 @@ export function GameMapProvider({ children }: { children: ReactNode }) {
   const [saveId, setSaveId] = useState<string>(() => Date.now().toString());
   const [map, setMap] = useState<GameMap | null>(null);
   const [state, setState] = useState<GameState | null>(null);
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<LogLine[]>([]);
 
-  const setStateAndLog = (newState: GameState, newLog: string[]) => {
+  const setStateAndLog = (newState: GameState, newLog: LogLine[]) => {
     setState(newState);
     setLog(newLog);
   };

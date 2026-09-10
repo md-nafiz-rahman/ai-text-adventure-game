@@ -48,6 +48,22 @@ export type Room = {
   enemy?: Enemy;
 };
 
+export type LogLineType =
+  | 'narrative'
+  | 'item'
+  | 'enemy'
+  | 'puzzle'
+  | 'system'
+  | 'command'
+  | 'ai'
+  | 'success'
+  | 'fail';
+
+export type LogLine = {
+  text: string;
+  type: LogLineType;
+};
+
 export type GameMap = {
   title: string;
   startRoomId: string;

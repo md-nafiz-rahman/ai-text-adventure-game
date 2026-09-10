@@ -1,13 +1,38 @@
 import { useGameMap } from '@/contexts/GameMapContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { ThemeColors, useSettings } from '@/contexts/SettingsContext';
 import { sampleMap } from '@/data/sampleMap';
 import { getQuickActions, processCommand } from '@/engine/gameEngine';
 import { checkAnswerSemantically } from '@/services/answerService';
 import { getFlavorResponse } from '@/services/flavorService';
 import { saveGame } from '@/services/saveService';
+import type { LogLine, LogLineType } from '@/types/game';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function getLogLineStyle(type: LogLineType, colors: ThemeColors) {
+  switch (type) {
+    case 'narrative':
+      return { color: colors.accent };
+    case 'item':
+      return { color: colors.item };
+    case 'enemy':
+      return { color: colors.danger };
+    case 'puzzle':
+      return { color: colors.puzzle };
+    case 'ai':
+      return { color: colors.ai, fontStyle: 'italic' as const };
+    case 'command':
+      return { color: colors.text, fontWeight: 'bold' as const };
+    case 'success':
+      return { color: colors.accent, fontWeight: 'bold' as const };
+    case 'fail':
+      return { color: colors.danger, fontWeight: 'bold' as const };
+    case 'system':
+    default:
+      return { color: colors.textSecondary };
+  }
+}
 
 function WelcomeScreen() {
   const { startNewGame } = useGameMap();
@@ -67,14 +92,18 @@ export default function GameScreen() {
   }
 
   const executeCommand = async (command: string) => {
-    const commandLine = [...log, '', `> ${command}`];
+    const commandLine: LogLine[] = [
+      ...log,
+      { text: '', type: 'system' },
+      { text: `> ${command}`, type: 'command' },
+    ];
 
     if (command.toLowerCase() === 'save') {
       try {
         await saveGame(saveId, map, state, log);
-        setStateAndLog(state, [...commandLine, 'Game saved. Find it under Saved Games.']);
+        setStateAndLog(state, [...commandLine, { text: 'Game saved. Find it under Saved Games.', type: 'system' }]);
       } catch (err) {
-        setStateAndLog(state, [...commandLine, 'Something went wrong saving your game.']);
+        setStateAndLog(state, [...commandLine, { text: 'Something went wrong saving your game.', type: 'system' }]);
       }
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
       return;
@@ -105,13 +134,13 @@ export default function GameScreen() {
       return;
     }
 
-    setStateAndLog(newState, [...commandLine, '...']);
+    setStateAndLog(newState, [...commandLine, { text: '...', type: 'system' }]);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
 
     const flavorText = await getFlavorResponse(command, map, newState);
 
     if (flavorText) {
-      setStateAndLog(newState, [...commandLine, `(nothing happens) ${flavorText}`]);
+      setStateAndLog(newState, [...commandLine, { text: `(nothing happens) ${flavorText}`, type: 'ai' }]);
     } else {
       setStateAndLog(newState, [...commandLine, ...output]);
     }
@@ -136,15 +165,8 @@ export default function GameScreen() {
     >
       <ScrollView ref={scrollViewRef} style={styles.flex} contentContainerStyle={styles.logContainer}>
         {log.map((line, i) => (
-          <Text
-            key={i}
-            style={[
-              styles.logText,
-              { color: colors.accent },
-              line.startsWith('>') && [styles.commandText, { color: colors.text }],
-            ]}
-          >
-            {line}
+          <Text key={i} style={[styles.logText, getLogLineStyle(line.type, colors)]}>
+            {line.text}
           </Text>
         ))}
       </ScrollView>
@@ -248,9 +270,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 2,
-  },
-  commandText: {
-    fontWeight: 'bold',
   },
   chipsRow: {
     flexGrow: 0,
