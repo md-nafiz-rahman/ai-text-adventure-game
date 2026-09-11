@@ -3,7 +3,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import type { GameMap } from '@/types/game';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { BACKEND_URL } from '@/constants/api';
 
@@ -23,6 +23,8 @@ const DEFAULT_MESSAGES = [
 const POLL_INTERVAL_MS = 1500;
 const DISPLAY_TICK_MS = 2500;
 const MAX_POLL_TIME_MS = 3 * 60 * 1000;
+
+type LanguageDifficulty = 'simple' | 'standard' | 'rich';
 
 function pollForResult(jobId: string, onStatusUpdate: (status: string) => void): Promise<GameMap> {
   const startedAt = Date.now();
@@ -75,6 +77,8 @@ export default function NewGameScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [displayMessage, setDisplayMessage] = useState(DEFAULT_MESSAGES[0]);
+  const [languageDifficulty, setLanguageDifficulty] = useState<LanguageDifficulty>('standard');
+  const [includeRiddles, setIncludeRiddles] = useState(true);
 
   const rotatingIndexRef = useRef(0);
   const pendingRealStatusesRef = useRef<string[]>([]);
@@ -115,7 +119,7 @@ export default function NewGameScreen() {
       const startResponse = await fetch(`${BACKEND_URL}/generate/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc }),
+        body: JSON.stringify({ description: desc, languageDifficulty, includeRiddles }),
       });
 
       const startData = await startResponse.json();
@@ -135,6 +139,12 @@ export default function NewGameScreen() {
       setLoading(false);
     }
   };
+
+  const difficultyOptions: { value: LanguageDifficulty; label: string }[] = [
+    { value: 'simple', label: 'Simple' },
+    { value: 'standard', label: 'Standard' },
+    { value: 'rich', label: 'Rich' },
+  ];
 
   return (
     <KeyboardAvoidingView
@@ -156,6 +166,54 @@ export default function NewGameScreen() {
           onChangeText={setDescription}
           multiline
         />
+
+        <View style={styles.optionBlock}>
+          <Text style={[styles.optionLabel, { color: colors.text }]}>Language difficulty</Text>
+          <View style={styles.segmentedRow}>
+            {difficultyOptions.map((option) => {
+              const selected = languageDifficulty === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: selected ? colors.accent : colors.card,
+                      borderColor: colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setLanguageDifficulty(option.value)}
+                  disabled={loading}
+                >
+                  <Text
+                    style={[
+                      styles.segmentButtonText,
+                      { color: selected ? colors.accentText : colors.textSecondary },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={[styles.optionRow, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+          <View style={styles.optionRowText}>
+            <Text style={[styles.optionLabel, { color: colors.text }]}>Include puzzles &amp; riddles</Text>
+            <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+              Turn off for a world with no riddles to solve
+            </Text>
+          </View>
+          <Switch
+            value={includeRiddles}
+            onValueChange={setIncludeRiddles}
+            trackColor={{ false: colors.cardBorder, true: colors.accent }}
+            thumbColor="#ffffff"
+            disabled={loading}
+          />
+        </View>
 
         <TouchableOpacity
           style={[styles.primaryButton, { backgroundColor: colors.accent }]}
@@ -214,6 +272,48 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     minHeight: 70,
     textAlignVertical: 'top',
+  },
+  optionBlock: {
+    width: '100%',
+    marginBottom: 14,
+  },
+  optionLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  optionDescription: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  segmentButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  segmentButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  optionRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+  },
+  optionRowText: {
+    flex: 1,
+    marginRight: 12,
   },
   primaryButton: {
     width: '100%',
