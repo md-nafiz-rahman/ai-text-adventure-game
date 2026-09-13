@@ -4,6 +4,7 @@ import { sampleMap } from '@/data/sampleMap';
 import { getQuickActions, processCommand } from '@/engine/gameEngine';
 import { checkAnswerSemantically } from '@/services/answerService';
 import { getFlavorResponse } from '@/services/flavorService';
+import { detectIntent } from '@/services/intentService';
 import { saveGame } from '@/services/saveService';
 import type { LogLine, LogLineType } from '@/types/game';
 import { useRef, useState } from 'react';
@@ -91,6 +92,10 @@ export default function GameScreen() {
     return <WelcomeScreen />;
   }
 
+  const scrollToEnd = () => {
+    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
   const executeCommand = async (command: string) => {
     const commandLine: LogLine[] = [
       ...log,
@@ -98,22 +103,21 @@ export default function GameScreen() {
       { text: `> ${command}`, type: 'command' },
     ];
 
-    if (command.toLowerCase() === 'save') {
+    const performSave = async () => {
       try {
         await saveGame(saveId, map, state, log);
         setStateAndLog(state, [...commandLine, { text: 'Game saved. Find it under Saved Games.', type: 'system' }]);
       } catch (err) {
         setStateAndLog(state, [...commandLine, { text: 'Something went wrong saving your game.', type: 'system' }]);
       }
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-      return;
-    }
+      scrollToEnd();
+    };
 
-    const { newState, output, unrecognized, needsAnswerCheck } = processCommand(map, state, command);
-
-    if (!unrecognized) {
-      setStateAndLog(newState, [...commandLine, ...output]);
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    const runRecognizedCommand = async (commandToRun: string, prefixLine?: LogLine) => {
+      const { newState, output, needsAnswerCheck } = processCommand(map, state, commandToRun);
+      const fullOutput = prefixLine ? [prefixLine, ...output] : output;
+      setStateAndLog(newState, [...commandLine, ...fullOutput]);
+      scrollToEnd();
 
       if (needsAnswerCheck) {
         const isActuallyCorrect = await checkAnswerSemantically(
@@ -128,14 +132,40 @@ export default function GameScreen() {
             'solve __FORCE_CORRECT__'
           );
           setStateAndLog(correctedState, [...commandLine, ...correctedOutput]);
-          setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+          scrollToEnd();
         }
       }
+    };
+
+    if (command.toLowerCase() === 'save') {
+      await performSave();
+      return;
+    }
+
+    const { newState, output, unrecognized } = processCommand(map, state, command);
+
+    if (!unrecognized) {
+      await runRecognizedCommand(command);
       return;
     }
 
     setStateAndLog(newState, [...commandLine, { text: '...', type: 'system' }]);
-    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    scrollToEnd();
+
+    const intent = await detectIntent(command, map, state);
+
+    if (intent) {
+      if (intent.verb === 'save') {
+        await performSave();
+        return;
+      }
+      const normalizedCommand = intent.argument ? `${intent.verb} ${intent.argument}` : intent.verb;
+      await runRecognizedCommand(normalizedCommand, {
+        text: `(understood as: ${normalizedCommand})`,
+        type: 'ai',
+      });
+      return;
+    }
 
     const flavorText = await getFlavorResponse(command, map, newState);
 
@@ -145,7 +175,7 @@ export default function GameScreen() {
       setStateAndLog(newState, [...commandLine, ...output]);
     }
 
-    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    scrollToEnd();
   };
 
   const handleSubmit = async () => {
@@ -165,7 +195,13 @@ export default function GameScreen() {
     >
       <ScrollView ref={scrollViewRef} style={styles.flex} contentContainerStyle={styles.logContainer}>
         {log.map((line, i) => (
-          <Text key={i} style={[styles.logText, getLogLineStyle(line.type, colors)]}>
+          <Text
+            key={i}
+            style={[
+              styles.logText,
+              getLogLineStyle(line.type, colors),
+            ]}
+          >
             {line.text}
           </Text>
         ))}
