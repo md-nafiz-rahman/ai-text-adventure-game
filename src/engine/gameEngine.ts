@@ -12,6 +12,7 @@ export function createInitialState(map: GameMap): GameState {
     hintsShownForPuzzle: {},
     gameOver: false,
     won: false,
+    visitedRoomIds: [map.startRoomId],
   };
 }
 
@@ -21,7 +22,7 @@ function getRoom(map: GameMap, roomId: string): Room {
   return room;
 }
 
-function findItemById(map: GameMap, itemId: string): Item | undefined {
+export function findItemById(map: GameMap, itemId: string): Item | undefined {
   for (const r of map.rooms) {
     const found = r.items.find((i) => i.id === itemId);
     if (found) return found;
@@ -29,13 +30,13 @@ function findItemById(map: GameMap, itemId: string): Item | undefined {
   return undefined;
 }
 
-function isExitUnlocked(exit: Exit, roomId: string, state: GameState): boolean {
+export function isExitUnlocked(exit: Exit, roomId: string, state: GameState): boolean {
   if (!exit.locked) return true;
   if (exit.requiredItemId && state.inventory.includes(exit.requiredItemId)) return true;
   return state.unlockedExitKeys.includes(`${roomId}:${exit.direction}`);
 }
 
-function isItemVisible(item: Item, state: GameState): boolean {
+export function isItemVisible(item: Item, state: GameState): boolean {
   if (state.inventory.includes(item.id)) return false;
   if (!item.hidden) return true;
   return state.revealedItemIds.includes(item.id);
@@ -138,6 +139,11 @@ export function processCommand(
 
   const room = getRoom(map, state.currentRoomId);
   let newState: GameState = { ...state };
+
+  if (!newState.visitedRoomIds) {
+    newState.visitedRoomIds = state.currentRoomId ? [state.currentRoomId] : [];
+  }
+
   let output: LogLine[] = [];
   let unrecognized = false;
   let needsAnswerCheck: { officialAnswer: string; guess: string } | undefined;
@@ -165,6 +171,9 @@ export function processCommand(
         break;
       }
       newState.currentRoomId = exit.roomId;
+      if (!newState.visitedRoomIds.includes(exit.roomId)) {
+        newState.visitedRoomIds = [...newState.visitedRoomIds, exit.roomId];
+      }
       output = describeRoom(map, newState);
       break;
     }
@@ -328,6 +337,7 @@ export function processCommand(
         'solve <answer> - attempt the puzzle in this room',
         'hint - get a hint for the current puzzle',
         'fight <enemy> - attempt to defeat an enemy',
+        'ask <question> - ask the narrator about the world',
         'save - save your progress',
       ].map(sys);
       break;

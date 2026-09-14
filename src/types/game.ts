@@ -48,6 +48,16 @@ export type Room = {
   enemy?: Enemy;
 };
 
+export type GameMap = {
+  title: string;
+  startRoomId: string;
+  rooms: Room[];
+  objective: {
+    type: 'reachRoom' | 'collectItems' | 'defeatEnemies';
+    target: string[];
+  };
+};
+
 export type LogLineType =
   | 'narrative'
   | 'item'
@@ -64,16 +74,6 @@ export type LogLine = {
   type: LogLineType;
 };
 
-export type GameMap = {
-  title: string;
-  startRoomId: string;
-  rooms: Room[];
-  objective: {
-    type: 'reachRoom' | 'collectItems' | 'defeatEnemies';
-    target: string[];
-  };
-};
-
 export type GameState = {
   currentRoomId: string;
   inventory: string[];
@@ -85,4 +85,5 @@ export type GameState = {
   hintsShownForPuzzle: Record<string, number>;
   gameOver: boolean;
   won: boolean;
+  visitedRoomIds: string[];
 };

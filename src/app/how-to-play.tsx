@@ -8,12 +8,20 @@ export default function HowToPlayScreen() {
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.title, { color: colors.accent }]}>How to Play</Text>
 
-      <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
-        This is a text adventure game. You explore, solve puzzles, and make
-        your way through each world by typing short commands, or by tapping
-        the suggested actions that appear above the text box, which do
-        exactly the same thing as typing them yourself.
-      </Text>
+        <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
+          This is a text adventure game. You explore, solve puzzles, and make
+          your way through each world by typing short commands, or by tapping
+          the suggested actions that appear above the text box, which do
+          exactly the same thing as typing them yourself.
+        </Text>
+
+        <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
+          You don't need to get the exact wording right, "walk north" or "grab
+          the flashlight" work just as well as "go north" or "take flashlight".
+          And if you type something the game genuinely doesn't recognise, it
+          won't just tell you off; it'll react in character, so exploring and
+          experimenting is always safe.
+        </Text>
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.accent }]}>Getting Around</Text>
@@ -62,6 +70,23 @@ export default function HowToPlayScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Asking the Narrator</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>
+          Curious about the story, your objective, or something you've
+          already seen? Ask the narrator directly, in your own words.
+        </Text>
+
+        <Text style={[styles.command, { color: colors.text }]}>ask [your question]</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>
+          e.g. "ask what am I supposed to do" or "ask who lived here". The
+          narrator only knows about places you've actually explored, so it
+          won't spoil anything you haven't found yet, and it won't give away
+          puzzle answers or an enemy's weakness, that's still for you to
+          discover.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.accent }]}>Your Goal</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
           Every adventure has an objective, maybe there's a treasure to find,
@@ -73,7 +98,7 @@ export default function HowToPlayScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.accent }]}>Creating a New Adventure</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          Head to the "New Game" tab to begin a fresh story. Describe a
+          Head to "New Game" in the menu to begin a fresh story. Describe a
           setting you would like to explore, a spooky castle, a hidden jungle
           temple, anything you can imagine or just ask for a surprise and
           see what adventure awaits you.
@@ -84,16 +109,17 @@ export default function HowToPlayScreen() {
         <Text style={[styles.sectionTitle, { color: colors.accent }]}>Saving Your Progress</Text>
         <Text style={[styles.command, { color: colors.text }]}>save</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          Store your progress. Find it later under the "Saved Games" tab, where
-          you can continue, replay, or delete any saved adventure.
+          Store your progress. Find it later under "Saved Games" in the
+          menu, where you can continue, replay, or delete any saved
+          adventure.
         </Text>
       </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.accent }]}>Appearance</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          Head to the "Settings" tab to switch between a dark or light look,
-          or to turn the tappable suggested actions on or off.
+          Head to "Settings" in the menu to switch between a dark or light
+          look, or to turn the tappable suggested actions on or off.
         </Text>
       </View>
     </ScrollView>

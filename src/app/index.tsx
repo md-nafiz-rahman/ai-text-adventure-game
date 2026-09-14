@@ -5,6 +5,7 @@ import { getQuickActions, processCommand } from '@/engine/gameEngine';
 import { checkAnswerSemantically } from '@/services/answerService';
 import { getFlavorResponse } from '@/services/flavorService';
 import { detectIntent } from '@/services/intentService';
+import { askNarrator } from '@/services/narratorService';
 import { saveGame } from '@/services/saveService';
 import type { LogLine, LogLineType } from '@/types/game';
 import { useRef, useState } from 'react';
@@ -137,8 +138,33 @@ export default function GameScreen() {
       }
     };
 
-    if (command.toLowerCase() === 'save') {
+    const lowerCommand = command.trim().toLowerCase();
+
+    if (lowerCommand === 'save') {
       await performSave();
+      return;
+    }
+
+    if (lowerCommand === 'ask' || lowerCommand.startsWith('ask ')) {
+      const question = command.trim().slice(3).trim();
+
+      if (!question) {
+        setStateAndLog(state, [...commandLine, { text: 'Ask about what?', type: 'system' }]);
+        scrollToEnd();
+        return;
+      }
+
+      setStateAndLog(state, [...commandLine, { text: '...', type: 'system' }]);
+      scrollToEnd();
+
+      const answer = await askNarrator(question, map, state);
+
+      if (answer) {
+        setStateAndLog(state, [...commandLine, { text: answer, type: 'ai' }]);
+      } else {
+        setStateAndLog(state, [...commandLine, { text: 'The narrator has nothing to say right now.', type: 'system' }]);
+      }
+      scrollToEnd();
       return;
     }
 
@@ -195,13 +221,7 @@ export default function GameScreen() {
     >
       <ScrollView ref={scrollViewRef} style={styles.flex} contentContainerStyle={styles.logContainer}>
         {log.map((line, i) => (
-          <Text
-            key={i}
-            style={[
-              styles.logText,
-              getLogLineStyle(line.type, colors),
-            ]}
-          >
+          <Text key={i} style={[styles.logText, getLogLineStyle(line.type, colors)]}>
             {line.text}
           </Text>
         ))}
