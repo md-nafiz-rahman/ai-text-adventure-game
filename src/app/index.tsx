@@ -8,6 +8,7 @@ import { detectIntent } from '@/services/intentService';
 import { askNarrator } from '@/services/narratorService';
 import { saveGame } from '@/services/saveService';
 import type { LogLine, LogLineType } from '@/types/game';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,6 +41,7 @@ function WelcomeScreen() {
   const { startNewGame } = useGameMap();
   const { colors } = useSettings();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <ScrollView
@@ -60,17 +62,20 @@ function WelcomeScreen() {
         exactly the same thing.
       </Text>
 
-      <Text style={[welcomeStyles.paragraph, { color: colors.text }]}>
-        Try a hand-built adventure below, or head to{' '}
-        <Text style={[welcomeStyles.highlight, { color: colors.accent }]}>New Game</Text> in the
-        menu to describe your own setting and let AI build a world for you to explore.
-      </Text>
-
       <TouchableOpacity
         style={[welcomeStyles.primaryButton, { backgroundColor: colors.accent }]}
-        onPress={() => startNewGame(sampleMap)}
+        onPress={() => router.push('/new-game')}
       >
         <Text style={[welcomeStyles.primaryButtonText, { color: colors.accentText }]}>
+          Create an AI Adventure
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[welcomeStyles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.accent }]}
+        onPress={() => startNewGame(sampleMap)}
+      >
+        <Text style={[welcomeStyles.secondaryButtonText, { color: colors.accent }]}>
           Try the Default Adventure
         </Text>
       </TouchableOpacity>
@@ -290,20 +295,29 @@ const welcomeStyles = StyleSheet.create({
   paragraph: {
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: 24,
     textAlign: 'center',
   },
-  highlight: {
-    fontWeight: 'bold',
-  },
   primaryButton: {
+    width: '100%',
     paddingVertical: 16,
-    paddingHorizontal: 32,
     borderRadius: 10,
-    marginTop: 12,
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   primaryButtonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  secondaryButton: {
+    width: '100%',
+    borderWidth: 1,
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  secondaryButtonText: {
     fontWeight: 'bold',
     fontSize: 16,
   },
