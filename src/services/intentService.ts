@@ -30,6 +30,7 @@ export async function detectIntent(
     room.enemy && !state.defeatedEnemyIds.includes(room.enemy.id) ? room.enemy.name : null;
 
   const hasPuzzle = !!(room.puzzle && !state.solvedPuzzleIds.includes(room.puzzle.id));
+  const puzzleAnswer = hasPuzzle ? room.puzzle!.answer : null;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -45,6 +46,7 @@ export async function detectIntent(
         itemNames: visibleItemNames,
         enemyName,
         hasPuzzle,
+        puzzleAnswer,
       }),
       signal: controller.signal,
     });
@@ -79,6 +81,10 @@ export async function detectIntent(
       const allNames = [...visibleItemNames, ...(enemyName ? [enemyName] : [])];
       const matches = allNames.some((n) => n.toLowerCase() === argument.toLowerCase());
       if (!matches) return null;
+    }
+
+    if ((data.verb === 'solve' || data.verb === 'hint') && !hasPuzzle) {
+      return null;
     }
 
     return { verb: data.verb, argument };

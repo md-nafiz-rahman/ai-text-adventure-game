@@ -46,6 +46,38 @@ function capitalizeWords(text: string): string {
   return text.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+
+function stripLeadingArticle(text: string): string {
+  return text.replace(/^(the|a|an)\s+/i, '').trim();
+}
+
+function joinWithOr(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  if (names.length === 2) return `${names[0]} or ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')}, or ${names[names.length - 1]}`;
+}
+
+type NameMatch<T> =
+  | { type: 'found'; item: T }
+  | { type: 'ambiguous'; names: string[] }
+  | { type: 'none' };
+
+
+function resolveNameReference<T>(
+  candidates: T[],
+  getName: (item: T) => string,
+  reference: string
+): NameMatch<T> {
+  const exact = candidates.find((c) => getName(c).toLowerCase() === reference);
+  if (exact) return { type: 'found', item: exact };
+
+  const partial = candidates.filter((c) => getName(c).toLowerCase().includes(reference));
+  if (partial.length === 1) return { type: 'found', item: partial[0] };
+  if (partial.length > 1) return { type: 'ambiguous', names: partial.map(getName) };
+
+  return { type: 'none' };
+}
+
 function describeRoom(map: GameMap, state: GameState): LogLine[] {
   const room = getRoom(map, state.currentRoomId);
   const lines: LogLine[] = [{ text: room.description, type: 'narrative' }];
@@ -161,11 +193,19 @@ export function processCommand(
         output = [sys('Go where?')];
         break;
       }
-      const exit = room.exits.find((e) => e.direction.toLowerCase() === argument);
-      if (!exit) {
-        output = [sys(`You can't go ${argument} from here.`)];
+      const target = stripLeadingArticle(argument);
+      const match = resolveNameReference(room.exits, (e) => e.direction, target);
+
+      if (match.type === 'ambiguous') {
+        output = [sys(`Did you mean ${joinWithOr(match.names)}? Try being more specific.`)];
         break;
       }
+      if (match.type === 'none') {
+        output = [sys(`You can't go ${target} from here.`)];
+        break;
+      }
+
+      const exit = match.item;
       if (!isExitUnlocked(exit, room.id, state)) {
         output = [sys('That way is locked.')];
         break;
@@ -183,11 +223,20 @@ export function processCommand(
         output = [sys('Take what?')];
         break;
       }
-      const item = room.items.find((i) => i.name.toLowerCase() === argument);
-      if (!item || !isItemVisible(item, state)) {
-        output = [sys(`There is no ${argument} here to take.`)];
+      const target = stripLeadingArticle(argument);
+      const visibleItems = room.items.filter((i) => isItemVisible(i, state));
+      const match = resolveNameReference(visibleItems, (i) => i.name, target);
+
+      if (match.type === 'ambiguous') {
+        output = [sys(`Did you mean ${joinWithOr(match.names)}? Try being more specific.`)];
         break;
       }
+      if (match.type === 'none') {
+        output = [sys(`There is no ${target} here to take.`)];
+        break;
+      }
+
+      const item = match.item;
       if (!item.canTake) {
         output = [sys(`You can't take the ${item.name}.`)];
         break;
@@ -212,23 +261,42 @@ export function processCommand(
         output = [sys('Examine what?')];
         break;
       }
-      const roomItem = room.items.find((i) => i.name.toLowerCase() === argument && isItemVisible(i, state));
-      if (roomItem) {
-        output = [{ text: roomItem.description, type: 'item' }];
+      const target = stripLeadingArticle(argument);
+
+      const visibleItems = room.items.filter((i) => isItemVisible(i, state));
+      const roomMatch = resolveNameReference(visibleItems, (i) => i.name, target);
+      if (roomMatch.type === 'ambiguous') {
+        output = [sys(`Did you mean ${joinWithOr(roomMatch.names)}? Try being more specific.`)];
         break;
       }
-      const invItem = state.inventory
+      if (roomMatch.type === 'found') {
+        output = [{ text: roomMatch.item.description, type: 'item' }];
+        break;
+      }
+
+      const inventoryItems = state.inventory
         .map((id) => findItemById(map, id))
-        .find((i) => i?.name.toLowerCase() === argument);
-      if (invItem) {
-        output = [{ text: invItem.description, type: 'item' }];
+        .filter((i): i is Item => !!i);
+      const invMatch = resolveNameReference(inventoryItems, (i) => i.name, target);
+      if (invMatch.type === 'ambiguous') {
+        output = [sys(`Did you mean ${joinWithOr(invMatch.names)}? Try being more specific.`)];
         break;
       }
-      if (room.enemy && room.enemy.name.toLowerCase() === argument && !state.defeatedEnemyIds.includes(room.enemy.id)) {
+      if (invMatch.type === 'found') {
+        output = [{ text: invMatch.item.description, type: 'item' }];
+        break;
+      }
+
+      if (
+        room.enemy &&
+        !state.defeatedEnemyIds.includes(room.enemy.id) &&
+        room.enemy.name.toLowerCase().includes(target)
+      ) {
         output = [{ text: room.enemy.introMessage, type: 'enemy' }];
         break;
       }
-      output = [sys(`There is no ${argument} here to examine.`)];
+
+      output = [sys(`There is no ${target} here to examine.`)];
       break;
     }
 
@@ -290,8 +358,9 @@ export function processCommand(
         output = [sys('Fight what?')];
         break;
       }
-      if (!room.enemy || room.enemy.name.toLowerCase() !== argument) {
-        output = [sys(`There is no ${argument} here to fight.`)];
+      const target = stripLeadingArticle(argument);
+      if (!room.enemy || !room.enemy.name.toLowerCase().includes(target)) {
+        output = [sys(`There is no ${target} here to fight.`)];
         break;
       }
       if (state.defeatedEnemyIds.includes(room.enemy.id)) {
